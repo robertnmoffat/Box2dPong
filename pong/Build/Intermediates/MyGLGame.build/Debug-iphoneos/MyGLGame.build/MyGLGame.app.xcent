@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>application-identifier</key>
+	<string>N6RP3H788Z.ca.btechgames2015.MyGLGame</string>
+	<key>com.apple.developer.default-data-protection</key>
+	<string>NSFileProtectionComplete</string>
+	<key>com.apple.developer.pass-type-identifiers</key>
+	<array>
+		<string>N6RP3H788Z.*</string>
+	</array>
+	<key>com.apple.developer.team-identifier</key>
+	<string>N6RP3H788Z</string>
+	<key>get-task-allow</key>
+	<true/>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>N6RP3H788Z.ca.btechgames2015.MyGLGame</string>
+	</array>
+</dict>
+</plist>
