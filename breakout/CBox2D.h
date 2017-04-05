@@ -27,6 +27,7 @@ enum
 -(void) Update:(float)elapsedTime;
 -(void) Render:(int)mvpMatPtr;
 -(void) RegisterHit;
+-(void) removeBlock:(void*)body;
 
 @end
 

@@ -10,6 +10,7 @@
 #include "CBox2D.h"
 #include <OpenGLES/ES2/glext.h>
 #include <stdio.h>
+#import <vector>
 
 #define BUFFER_OFFSET(i) ((char *)NULL + (i))
 //#define LOG_TO_CONSOLE
@@ -35,6 +36,8 @@
 #define BALL_VELOCITY		100000.0f
 #define BALL_SPHERE_SEGS	128
 
+#define PTM_RATIO 32.0
+
 const float MAX_TIMESTEP = 1.0f/60.0f;
 const int NUM_VEL_ITERATIONS = 10;
 const int NUM_POS_ITERATIONS = 3;
@@ -42,11 +45,35 @@ const int NUM_POS_ITERATIONS = 3;
 
 #pragma mark - Box2D contact listener class
 
+struct MyContact {
+    b2Fixture *fixtureA;
+    b2Fixture *fixtureB;
+    bool operator==(const MyContact& other) const
+    {
+        return (fixtureA == other.fixtureA) && (fixtureB == other.fixtureB);
+    }
+};
+
 class CContactListener : public b2ContactListener
 {
+    
+    
 public:
-    void BeginContact(b2Contact* contact) {};
-    void EndContact(b2Contact* contact) {};
+    std::vector<MyContact>_contacts;
+    b2Body* bodyToRemove = nullptr;
+    
+    void BeginContact(b2Contact* contact) {
+        MyContact myContact = { contact->GetFixtureA(), contact->GetFixtureB() };
+        _contacts.push_back(myContact);
+    };
+    void EndContact(b2Contact* contact) {
+        MyContact myContact = { contact->GetFixtureA(), contact->GetFixtureB() };
+        std::vector<MyContact>::iterator pos;
+        pos = std::find(_contacts.begin(), _contacts.end(), myContact);
+        if (pos != _contacts.end()) {
+            _contacts.erase(pos);
+        }
+    };
     void PreSolve(b2Contact* contact, const b2Manifold* oldManifold)
     {
         b2WorldManifold worldManifold;
@@ -57,9 +84,17 @@ public:
         {
             // Use contact->GetFixtureA()->GetBody() to get the body
             b2Body* bodyA = contact->GetFixtureA()->GetBody();
+            b2Body* bodyB = contact->GetFixtureB()->GetBody();
+            bodyA->SetAwake(false);
+            bodyA->SetLinearVelocity(b2Vec2(10000,0));
+            bodyB->SetAwake(false);
             CBox2D *parentObj = (__bridge CBox2D *)(bodyA->GetUserData());
             // Call RegisterHit (assume CBox2D object is in user data)
+            
+            bodyToRemove = bodyA;
+            
             [parentObj RegisterHit];
+            
         }
     }
     void PostSolve(b2Contact* contact, const b2ContactImpulse* impulse) {};
@@ -79,6 +114,8 @@ public:
     b2Body *firstBrick, *secondBrick, *theBall;
     CContactListener *contactListener;
     
+    b2Fixture *_bottomFixture;
+    
     // GL-specific variables
     // You will need to set up 2 vertex arrays (for brick and ball)
     GLuint brickVertexArray[5], ballVertexArray;
@@ -89,6 +126,7 @@ public:
     bool ballHitBrick;
     bool ballLaunched;
     float totalElapsedTime;
+    
 }
 @end
 
@@ -98,7 +136,7 @@ public:
 {
     self = [super init];
     if (self) {
-        gravity = new b2Vec2(0.0f, -10.0f);
+        gravity = new b2Vec2(0.0f, 0.0f);
         world = new b2World(*gravity);
         
         // For HelloWorld
@@ -116,13 +154,13 @@ public:
         brickBodyDef.position.Set(BRICK1_POS_X, BRICK1_POS_Y);
         firstBrick = world->CreateBody(&brickBodyDef);
         brickBodyDef.position.Set(BRICK2_POS_X, BRICK2_POS_Y);
-        secondBrick =world->CreateBody(&brickBodyDef);
-        if (firstBrick&&secondBrick)
+        //secondBrick =world->CreateBody(&brickBodyDef);
+        if (firstBrick)//&&secondBrick)
         {
             firstBrick->SetUserData((__bridge void *)self);
-            secondBrick->SetUserData((__bridge void *)self);
+            //secondBrick->SetUserData((__bridge void *)self);
             firstBrick->SetAwake(false);
-            secondBrick->SetAwake(false);
+            //secondBrick->SetAwake(false);
             b2PolygonShape dynamicBox;
             dynamicBox.SetAsBox(BRICK_WIDTH/2, BRICK_HEIGHT/2);
             b2FixtureDef fixtureDef;
@@ -131,7 +169,7 @@ public:
             fixtureDef.friction = 0.3f;
             fixtureDef.restitution = 1.0f;
             firstBrick->CreateFixture(&fixtureDef);
-            secondBrick->CreateFixture(&fixtureDef);
+            //secondBrick->CreateFixture(&fixtureDef);
             
             b2BodyDef ballBodyDef;
             ballBodyDef.type = b2_dynamicBody;
@@ -153,11 +191,48 @@ public:
             }
         }
         
+        
+        
         totalElapsedTime = 0;
         ballHitBrick = false;
         ballLaunched = false;
     }
     return self;
+}
+
+-(void)createBoundingBox{
+    float width = [UIScreen mainScreen].bounds.size.width;
+    float height = [UIScreen mainScreen].bounds.size.height;
+    
+    //CGSize winSize = [CCDirector sharedDirector].winSize;
+    
+    // Create a world
+    world = new b2World(*(gravity));
+    
+    // Create edges around the entire screen
+    //b2BodyDef groundBodyDef;
+//    groundBodyDef = new b2BodyDef;
+//    groundBodyDef->position.Set(0.0f,0.0f);
+//    groundBody = world->CreateBody(groundBodyDef);
+    
+    b2EdgeShape groundBoundBox;
+    b2FixtureDef groundBoxDef;
+    groundBoxDef.shape = &groundBoundBox;
+    
+    groundBoundBox.Set(b2Vec2(0.0f,0.0f), b2Vec2(width/PTM_RATIO, 0.0f));
+    _bottomFixture = groundBody->CreateFixture(&groundBoxDef);
+    
+    groundBoundBox.Set(b2Vec2(0,0), b2Vec2(0, height/PTM_RATIO));
+    groundBody->CreateFixture(&groundBoxDef);
+    
+    groundBoundBox.Set(b2Vec2(0, height/PTM_RATIO), b2Vec2(width/PTM_RATIO,
+                                                              height/PTM_RATIO));
+    groundBody->CreateFixture(&groundBoxDef);
+    
+    groundBoundBox.Set(b2Vec2(width/PTM_RATIO, height/PTM_RATIO),
+                  b2Vec2(width/PTM_RATIO, 0));
+    groundBody->CreateFixture(&groundBoxDef);
+
 }
 
 - (void)dealloc
@@ -176,6 +251,7 @@ public:
     if (ballLaunched)
     {
         theBall->ApplyLinearImpulse(b2Vec2(0, BALL_VELOCITY), theBall->GetPosition(), true);
+        
         theBall->SetActive(true);
 #ifdef LOG_TO_CONSOLE
         NSLog(@"Applying impulse %f to ball\n", BALL_VELOCITY);
@@ -187,19 +263,26 @@ public:
     //  call SetAwake()
     totalElapsedTime += elapsedTime;
     if ((totalElapsedTime > BRICK_WAIT) && firstBrick)
-        firstBrick->SetAwake(true);
+        firstBrick->SetAwake(false);
     
     // If the last collision test was positive,
     //  stop the ball and destroy the brick
     if (ballHitBrick)
     {
-        theBall->SetLinearVelocity(b2Vec2(0, 0));
+        b2Vec2 currentVel = theBall->GetLinearVelocity();
+        //theBall->SetLinearVelocity(b2Vec2(currentVel.x, -BALL_VELOCITY));
+        
         theBall->SetAngularVelocity(0);
-        theBall->SetActive(false);
-        world->DestroyBody(firstBrick);
-        firstBrick = NULL;
+        theBall->SetActive(true);
+        //world->DestroyBody(firstBrick);
+        //firstBrick = NULL;
         ballHitBrick = false;
     }
+    
+//    if(contactListener->bodyToRemove!=nullptr){
+//        b2Body* toRemove = (b2Body *)(contactListener->bodyToRemove);
+//        world->DestroyBody(toRemove);
+//    }
 
     if (world)
     {
@@ -213,6 +296,26 @@ public:
         {
             world->Step(elapsedTime, NUM_VEL_ITERATIONS, NUM_POS_ITERATIONS);
         }
+        
+        std::vector<MyContact>::iterator pos;
+        b2Body *bodyA=nullptr;
+        b2Body *bodyB=nullptr;
+        for(pos = contactListener->_contacts.begin();
+            pos != contactListener->_contacts.end(); ++pos) {
+            MyContact contact = *pos;
+            
+            bodyA = contact.fixtureA->GetBody();//Block
+            bodyB = contact.fixtureB->GetBody();//Ball
+            
+            
+            
+//            if ((contact.fixtureA == _bottomFixture && contact.fixtureB == _ballFixture) ||
+//                (contact.fixtureA == _ballFixture && contact.fixtureB == _bottomFixture)) {
+//                NSLog(@"Ball hit bottom!");
+//            }
+        }
+        if(bodyA!=nullptr)
+        world->DestroyBody(bodyA);
     }
 
    
@@ -317,7 +420,7 @@ public:
     }
 
     // For now assume simple ortho projection since it's only 2D
-    GLKMatrix4 projectionMatrix = GLKMatrix4MakeOrtho(0, 800, 0, 600, -10, 100);
+    GLKMatrix4 projectionMatrix = GLKMatrix4MakeOrtho(0, 800, 0, 1500, -10, 100);
     GLKMatrix4 modelViewMatrix = GLKMatrix4Identity;
     modelViewProjectionMatrix = GLKMatrix4Multiply(projectionMatrix, modelViewMatrix);
 }
@@ -357,6 +460,11 @@ public:
     ballHitBrick = true;
 }
 
+-(void)removeBlock:(void*)body{
+    b2Body* gameBody = (b2Body*)body;
+    //world->DestroyBody(gameBody);
+}
+
 -(void)LaunchBall
 {
     // Set some flag here for processing later...
@@ -393,10 +501,12 @@ public:
     fixtureDef.density = 1.0f;
     
     // Override the default friction.
-    fixtureDef.friction = 0.3f;
+    fixtureDef.friction = 0.0f;
     
     // Add the shape to the body.
     body->CreateFixture(&fixtureDef);
+    
+    //[self createBoundingBox];
     
     // Prepare for simulation. Typically we use a time step of 1/60 of a
     // second (60Hz) and 10 iterations. This provides a high quality simulation
@@ -418,6 +528,8 @@ public:
         
         printf("%4.2f %4.2f %4.2f\n", position.x, position.y, angle);
     }
+    
+    //theBall->SetLinearVelocity(b2Vec2(10000, BALL_VELOCITY));
 }
 
 @end
