@@ -27,6 +27,8 @@ enum
 -(void) Update:(float)elapsedTime;
 -(void) Render:(int)mvpMatPtr;
 -(void) RegisterHit;
+-(void) movePlayer:(float)move;
+-(void) moveAI:(float)ai;
 
 @end
 

@@ -261,6 +261,10 @@
     
     return YES;
 }
+- (IBAction)doPan:(UIPanGestureRecognizer *)sender {
+    CGPoint temp = [sender velocityInView:self.view];
+    [box2d movePlayer:temp.x * 0.01f];
+}
 
 - (IBAction)singleTap:(id)sender
 {

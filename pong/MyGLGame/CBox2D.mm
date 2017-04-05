@@ -30,7 +30,7 @@
 #define BRICK_HEIGHT		10.0f
 #define BRICK_WAIT			1.5f
 #define BALL_POS_X			400
-#define BALL_POS_Y			50
+#define BALL_POS_Y			300
 #define BALL_RADIUS			15.0f
 #define BALL_VELOCITY		100000.0f
 #define BALL_SPHERE_SEGS	128
@@ -79,15 +79,17 @@ public:
     b2Body *firstBrick, *secondBrick, *theBall;
     CContactListener *contactListener;
     
+    GLKVector2 direction;
     // GL-specific variables
     // You will need to set up 2 vertex arrays (for brick and ball)
     GLuint brickVertexArray[5], ballVertexArray;
     int numBrickVerts, numBallVerts;
     GLKMatrix4 modelViewProjectionMatrix;
-
+    
     // You will also need some extra variables here
     bool ballHitBrick;
     bool ballLaunched;
+    bool goDown;
     float totalElapsedTime;
 }
 @end
@@ -98,26 +100,27 @@ public:
 {
     self = [super init];
     if (self) {
-        gravity = new b2Vec2(0.0f, -10.0f);
+        gravity = new b2Vec2(0.0f, 0.0f);
         world = new b2World(*gravity);
         
         // For HelloWorld
         groundBodyDef = NULL;
         groundBody = NULL;
         groundBox = NULL;
-
+        goDown = true;
         // For brick & ball sample
         contactListener = new CContactListener();
         world->SetContactListener(contactListener);
+        direction = GLKVector2Make(0, -1);
         
         // Set up the brick and ball objects for Box2D
         b2BodyDef brickBodyDef;
-        brickBodyDef.type = b2_dynamicBody;
+        brickBodyDef.type = b2_staticBody;
         brickBodyDef.position.Set(BRICK1_POS_X, BRICK1_POS_Y);
         firstBrick = world->CreateBody(&brickBodyDef);
         brickBodyDef.position.Set(BRICK2_POS_X, BRICK2_POS_Y);
         secondBrick =world->CreateBody(&brickBodyDef);
-        if (firstBrick&&secondBrick)
+        if (firstBrick && secondBrick)
         {
             firstBrick->SetUserData((__bridge void *)self);
             secondBrick->SetUserData((__bridge void *)self);
@@ -175,13 +178,23 @@ public:
     //  and if so, use ApplyLinearImpulse() and SetActive(true)
     if (ballLaunched)
     {
-        theBall->ApplyLinearImpulse(b2Vec2(0, BALL_VELOCITY), theBall->GetPosition(), true);
+        if (goDown){
+            theBall->ApplyLinearImpulse(b2Vec2(direction.x * BALL_VELOCITY, direction.y * -BALL_VELOCITY), theBall->GetPosition(), true);
+        } else {
+            theBall->ApplyLinearImpulse(b2Vec2(direction.x * BALL_VELOCITY, direction.y * BALL_VELOCITY), theBall->GetPosition(), true);
+        }
         theBall->SetActive(true);
 #ifdef LOG_TO_CONSOLE
         NSLog(@"Applying impulse %f to ball\n", BALL_VELOCITY);
 #endif
-        ballLaunched = false;
+        //ballLaunched = false;
     }
+    if(theBall->GetPosition().y <= 50){
+        
+        theBall->SetTransform(b2Vec2(BALL_POS_X, BALL_POS_Y), 0);
+        
+    }
+
     
     // Check if it is time yet to drop the brick, and if so
     //  call SetAwake()
@@ -193,14 +206,18 @@ public:
     //  stop the ball and destroy the brick
     if (ballHitBrick)
     {
-        theBall->SetLinearVelocity(b2Vec2(0, 0));
-        theBall->SetAngularVelocity(0);
+        goDown = !goDown;
+       
+        //theBall->SetAngularVelocity(2);
         theBall->SetActive(false);
-        world->DestroyBody(firstBrick);
-        firstBrick = NULL;
+        //world->DestroyBody(firstBrick);
+        //firstBrick = NULL;
+        //firstBrick->SetActive(false);
+        //secondBrick->SetActive(false);
         ballHitBrick = false;
+        //firstBrick->GetPosition()
     }
-
+    
     if (world)
     {
         while (elapsedTime >= MAX_TIMESTEP)
@@ -214,12 +231,12 @@ public:
             world->Step(elapsedTime, NUM_VEL_ITERATIONS, NUM_POS_ITERATIONS);
         }
     }
-
-   
+    
+    
     // Set up vertex arrays and buffers for the brick and ball here
-
+    
     glEnable(GL_DEPTH_TEST);
-
+    
     if (firstBrick)
     {
         glGenVertexArraysOES(1, &brickVertexArray[0]);
@@ -273,7 +290,60 @@ public:
         
         glBindVertexArrayOES(0);
     }
-
+    if (secondBrick)
+    {
+        glGenVertexArraysOES(1, &brickVertexArray[1]);
+        glBindVertexArrayOES(brickVertexArray[1]);
+        
+        GLuint vertexBuffers[2];
+        glGenBuffers(2, vertexBuffers);
+        glBindBuffer(GL_ARRAY_BUFFER, vertexBuffers[0]);
+        GLfloat vertPos[18];
+        int k = 0;
+        numBrickVerts = 0;
+        vertPos[k++] = secondBrick->GetPosition().x - BRICK_WIDTH/2;
+        vertPos[k++] = secondBrick->GetPosition().y + BRICK_HEIGHT/2;
+        vertPos[k++] = 10;
+        numBrickVerts++;
+        vertPos[k++] = secondBrick->GetPosition().x + BRICK_WIDTH/2;
+        vertPos[k++] = secondBrick->GetPosition().y + BRICK_HEIGHT/2;
+        vertPos[k++] = 10;
+        numBrickVerts++;
+        vertPos[k++] = secondBrick->GetPosition().x + BRICK_WIDTH/2;
+        vertPos[k++] = secondBrick->GetPosition().y - BRICK_HEIGHT/2;
+        vertPos[k++] = 10;
+        numBrickVerts++;
+        vertPos[k++] = secondBrick->GetPosition().x - BRICK_WIDTH/2;
+        vertPos[k++] = secondBrick->GetPosition().y + BRICK_HEIGHT/2;
+        vertPos[k++] = 10;
+        numBrickVerts++;
+        vertPos[k++] = secondBrick->GetPosition().x + BRICK_WIDTH/2;
+        vertPos[k++] = secondBrick->GetPosition().y - BRICK_HEIGHT/2;
+        vertPos[k++] = 10;
+        numBrickVerts++;
+        vertPos[k++] = secondBrick->GetPosition().x - BRICK_WIDTH/2;
+        vertPos[k++] = secondBrick->GetPosition().y - BRICK_HEIGHT/2;
+        vertPos[k++] = 10;
+        numBrickVerts++;
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertPos), vertPos, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(VertexAttribPosition);
+        glVertexAttribPointer(VertexAttribPosition, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), BUFFER_OFFSET(0));
+        
+        GLfloat vertCol[numBrickVerts*3];
+        for (k=0; k<numBrickVerts*3; k+=3)
+        {
+            vertCol[k] = 1.0f;
+            vertCol[k+1] = 0.0f;
+            vertCol[k+2] = 0.0f;
+        }
+        glBindBuffer(GL_ARRAY_BUFFER, vertexBuffers[1]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertCol), vertCol, GL_STATIC_DRAW);
+        glEnableVertexAttribArray(VertexAttribColor);
+        glVertexAttribPointer(VertexAttribColor, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), BUFFER_OFFSET(0));
+        
+        glBindVertexArrayOES(0);
+    }
+    
     
     if (theBall)
     {
@@ -315,7 +385,7 @@ public:
         
         glBindVertexArrayOES(0);
     }
-
+    
     // For now assume simple ortho projection since it's only 2D
     GLKMatrix4 projectionMatrix = GLKMatrix4MakeOrtho(0, 800, 0, 600, -10, 100);
     GLKMatrix4 modelViewMatrix = GLKMatrix4Identity;
@@ -338,12 +408,16 @@ public:
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
     glUniformMatrix4fv(mvpMatPtr, 1, 0, modelViewProjectionMatrix.m);
-
+    
     // Bind each vertex array and call glDrawArrays
     //  for each of the ball and brick
-
+    
     glBindVertexArrayOES(brickVertexArray[0]);
     if (firstBrick && numBrickVerts > 0)
+        glDrawArrays(GL_TRIANGLES, 0, numBrickVerts);
+    
+    glBindVertexArrayOES(brickVertexArray[1]);
+    if (secondBrick && numBrickVerts > 0)
         glDrawArrays(GL_TRIANGLES, 0, numBrickVerts);
     
     glBindVertexArrayOES(ballVertexArray);
@@ -418,6 +492,31 @@ public:
         
         printf("%4.2f %4.2f %4.2f\n", position.x, position.y, angle);
     }
+}
+
+
+
+-(void) movePlayer: (float)move
+{
+    secondBrick->SetTransform(secondBrick->GetPosition() + b2Vec2(move, 0), BRICK2_POS_Y), 0;
+    //Set player boundry
+    if(secondBrick->GetPosition().x >= 500){
+        
+        
+    }
+    if(secondBrick->GetPosition().x <= 200){
+            
+    }
+    
+  /*  if(theBall->GetPosition().y <= 100){
+        
+        theBall->SetTransform(b2Vec2(BALL_POS_X, BALL_POS_Y), 0);
+        
+    }*/
+}
+
+-(void) moveAI: (float)ai{
+    firstBrick->SetTransform(b2Vec2((BALL_POS_X, theBall->GetPosition().y), 0),0);
 }
 
 @end
