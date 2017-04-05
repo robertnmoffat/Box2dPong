@@ -340,10 +340,14 @@ public:
             pos != contactListener->_contacts.end(); ++pos) {
             MyContact contact = *pos;
             
-            bodyA = contact.fixtureA->GetBody();//Block
-            bodyB = contact.fixtureB->GetBody();//Ball
-            
-            
+            for(int i=0; i<brickArrayLength; i++){
+                if(contact.fixtureA->GetBody()==bricks[i]){
+                    bodyA = contact.fixtureA->GetBody();//Block
+                }
+                if(contact.fixtureB->GetBody()==bricks[i]){
+                    bodyB = contact.fixtureB->GetBody();//Ball
+                }
+            }
             
 //            if ((contact.fixtureA == _bottomFixture && contact.fixtureB == _ballFixture) ||
 //                (contact.fixtureA == _ballFixture && contact.fixtureB == _bottomFixture)) {
@@ -354,6 +358,14 @@ public:
             for(int i=0; i<brickArrayLength; i++){
                 if(bodyA==bricks[i]){
                     world->DestroyBody(bodyA);
+                    bricks[i]=NULL;
+                }
+            }
+        }
+        if(bodyB!=nullptr){
+            for(int i=0; i<brickArrayLength; i++){
+                if(bodyB==bricks[i]){
+                    world->DestroyBody(bodyB);
                     bricks[i]=NULL;
                 }
             }
