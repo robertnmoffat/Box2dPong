@@ -135,7 +135,7 @@ public:
             b2FixtureDef fixtureDef;
             fixtureDef.shape = &dynamicBox;
             fixtureDef.density = 1.0f;
-            fixtureDef.friction = 0.3f;
+            fixtureDef.friction = 0.0f;
             fixtureDef.restitution = 1.0f;
             firstBrick->CreateFixture(&fixtureDef);
             secondBrick->CreateFixture(&fixtureDef);
@@ -154,7 +154,7 @@ public:
                 b2FixtureDef circleFixtureDef;
                 circleFixtureDef.shape = &circle;
                 circleFixtureDef.density = 1.0f;
-                circleFixtureDef.friction = 0.3f;
+                circleFixtureDef.friction = 0.0f;
                 circleFixtureDef.restitution = 1.0f;
                 theBall->CreateFixture(&circleFixtureDef);
             }
@@ -176,7 +176,7 @@ public:
                 b2FixtureDef fixtureDef;
                 fixtureDef.shape = &dynamicBox;
                 fixtureDef.density = 1.0f;
-                fixtureDef.friction = 0.3f;
+                fixtureDef.friction = 0.0f;
                 fixtureDef.restitution = 1.0f;
                 rightWall->CreateFixture(&fixtureDef);
             }
@@ -195,7 +195,7 @@ public:
                 b2FixtureDef fixtureDef;
                 fixtureDef.shape = &dynamicBox;
                 fixtureDef.density = 1.0f;
-                fixtureDef.friction = 0.3f;
+                fixtureDef.friction = 0.0f;
                 fixtureDef.restitution = 1.0f;
                 leftWall->CreateFixture(&fixtureDef);
             }
@@ -226,17 +226,7 @@ public:
     {
         theBall->ApplyLinearImpulse(b2Vec2(0,BALL_VELOCITY), theBall->GetPosition(), true);
         ballLaunched = false;
-      /*  if (goDown){
-            theBall->ApplyLinearImpulse(b2Vec2(direction.x * BALL_VELOCITY, direction.y * -BALL_VELOCITY), theBall->GetPosition(), true);
-        } else {
-            NSLog(@"bounce angle");
-           
-            float xdiff = theBall->GetPosition().x - secondBrick->GetPosition().x;
-            //theBall->ApplyLinearImpulse(b2Vec2(xdiff*10000, 0), theBall->GetPosition(), true);
-            
-            theBall->ApplyLinearImpulse(b2Vec2(direction.x * BALL_VELOCITY + xdiff*10000, direction.y * BALL_VELOCITY), theBall->GetPosition(), true);
-        }*/
-        
+      
         theBall->SetActive(true);
 #ifdef LOG_TO_CONSOLE
         NSLog(@"Applying impulse %f to ball\n", BALL_VELOCITY);
@@ -246,13 +236,13 @@ public:
     if(theBall->GetPosition().y <= 50){
         
         theBall->SetTransform(b2Vec2(BALL_POS_X, BALL_POS_Y), 0);
-        
+        ballLaunched = true;
     }
 
     if(theBall->GetPosition().y >= 550){
         
         theBall->SetTransform(b2Vec2(BALL_POS_X, BALL_POS_Y), 0);
-        
+        ballLaunched = true;
     }
     
     // Check if it is time yet to drop the brick, and if so
@@ -263,35 +253,12 @@ public:
     
     // If the last collision test was positive,
     //  stop the ball and destroy the brick
+    [self moveAI:0];
+    
     if (ballHitBrick)
     {
-        //goDown = !goDown;
-        
-        
-        /*if (ballHitSecond){
-            b2Vec2 balls = theBall->GetPosition() - firstBrick ->GetPosition();
-            direction.x = balls.x;
-            direction.y = balls.y;
-            
-        
-        }else{
-            b2Vec2 balls = theBall->GetPosition() - secondBrick ->GetPosition();
-            direction.x = balls.x;
-            direction.y = balls.y;
-        
-        }*/
-        
-        
-        
-       
-        //theBall->SetAngularVelocity(2);
-        //theBall->SetActive(false);
-        //world->DestroyBody(firstBrick);
-        //firstBrick = NULL;
-        //firstBrick->SetActive(false);
-        //secondBrick->SetActive(false);
         ballHitBrick = false;
-        //firstBrick->GetPosition()
+        
     }
     
     if (world)
@@ -577,34 +544,17 @@ public:
 -(void) movePlayer: (float)move
 {
     secondBrick->SetTransform(secondBrick->GetPosition() + b2Vec2(move, 0), secondBrick->GetAngle());
-    //Set player boundry
-    if(secondBrick->GetPosition().x >= 500){
-        
-        
-    }
-    if(secondBrick->GetPosition().x <= 200){
-            
-    }
-    
-  /*  if(theBall->GetPosition().y <= 100){
-        
-        theBall->SetTransform(b2Vec2(BALL_POS_X, BALL_POS_Y), 0);
-        
-    }*/
-    
-    //firstBrick->ApplyLinearImpulse(b2Vec2(theBall.x * BALL_VELOCITY, hitty.y * -BALL_VELOCITY), theBall->GetPosition(), true);
-
+  
 }
 
 -(void) moveAI: (float)ai{
-    //firstBrick->SetTransform(b2Vec2(BALL_POS_X, theBall->GetPosition().y), 0);
-    //theBall->ApplyLinearImpulse(b2Vec2(direction.x * BALL_VELOCITY, direction.y * -BALL_VELOCITY), theBall->GetPosition(), true);
+    firstBrick->SetTransform(b2Vec2(theBall->GetPosition().x, 500), 0);
+    
 }
 
 -(void)doBounceAngle{
     NSLog(@"bounce angle");
-    float ballx =theBall->GetPosition().x;
-    float paddlex =secondBrick->GetPosition().x;
+   
     float xdiff = theBall->GetPosition().x - secondBrick->GetPosition().x;
     theBall->ApplyLinearImpulse(b2Vec2(xdiff*10000, 0), theBall->GetPosition(), true);
     //theBall->ApplyForceToCenter(b2Vec2(xdiff*1000000000000, 0), true);
