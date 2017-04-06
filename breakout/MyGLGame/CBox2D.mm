@@ -23,11 +23,11 @@
 //   position, width+height (or radius), velocity,
 //   and how long to wait before dropping brick
 
-#define BRICK1_POS_X		400
-#define BRICK1_POS_Y		500
+#define BRICK1_POS_X		100
+#define BRICK1_POS_Y		1000
 #define PADDLE_POS_X		400
 #define PADDLE_POS_Y		50
-#define BRICK_POS_X_SPACING 100
+#define BRICK_POS_X_SPACING 150
 #define BRICK_POS_Y_SPACING 100
 #define BRICK_WIDTH			100.0f
 #define BRICK_HEIGHT		20.0f
@@ -35,7 +35,7 @@
 #define BALL_POS_X			400
 #define BALL_POS_Y			100
 #define BALL_RADIUS			15.0f
-#define BALL_VELOCITY		100000.0f
+#define BALL_VELOCITY		100000000.0f
 #define BALL_SPHERE_SEGS	128
 
 #define PTM_RATIO 32.0
@@ -69,12 +69,12 @@ public:
         _contacts.push_back(myContact);
     };
     void EndContact(b2Contact* contact) {
-        MyContact myContact = { contact->GetFixtureA(), contact->GetFixtureB() };
-        std::vector<MyContact>::iterator pos;
-        pos = std::find(_contacts.begin(), _contacts.end(), myContact);
-        if (pos != _contacts.end()) {
-            _contacts.erase(pos);
-        }
+//        MyContact myContact = { contact->GetFixtureA(), contact->GetFixtureB() };
+//        std::vector<MyContact>::iterator pos;
+//        pos = std::find(_contacts.begin(), _contacts.end(), myContact);
+//        if (pos != _contacts.end()) {
+//            _contacts.erase(pos);
+//        }
     };
     void PreSolve(b2Contact* contact, const b2Manifold* oldManifold)
     {
@@ -154,6 +154,7 @@ public:
     float totalElapsedTime;
     
     int brickArrayLength;
+    int gameScore;
     
 }
 @end
@@ -164,6 +165,7 @@ public:
 {
     brickArrayLength = (sizeof(bricks)/sizeof(b2Body*));
     gameStarted = false;
+    gameScore = 0;
     
     self = [super init];
     if (self) {
@@ -199,7 +201,7 @@ public:
             b2FixtureDef fixtureDef;
             fixtureDef.shape = &dynamicBox;
             fixtureDef.density = 1.0f;
-            fixtureDef.friction = 0.3f;
+            fixtureDef.friction = 0.0f;
             fixtureDef.restitution = 1.0f;
             rightWall->CreateFixture(&fixtureDef);
         }
@@ -219,7 +221,7 @@ public:
             b2FixtureDef fixtureDef;
             fixtureDef.shape = &dynamicBox;
             fixtureDef.density = 1.0f;
-            fixtureDef.friction = 0.3f;
+            fixtureDef.friction = 0.0f;
             fixtureDef.restitution = 1.0f;
             leftWall->CreateFixture(&fixtureDef);
         }
@@ -239,7 +241,7 @@ public:
             b2FixtureDef fixtureDef;
             fixtureDef.shape = &dynamicBox;
             fixtureDef.density = 1.0f;
-            fixtureDef.friction = 0.3f;
+            fixtureDef.friction = 0.0f;
             fixtureDef.restitution = 1.0f;
             topWall->CreateFixture(&fixtureDef);
         }
@@ -261,7 +263,7 @@ public:
             b2FixtureDef fixtureDef;
             fixtureDef.shape = &dynamicBox;
             fixtureDef.density = 1.0f;
-            fixtureDef.friction = 0.3f;
+            fixtureDef.friction = 0.0f;
             fixtureDef.restitution = 1.0f;
             paddle->CreateFixture(&fixtureDef);
         }
@@ -271,7 +273,7 @@ public:
             // Set up the brick and ball objects for Box2D
             b2BodyDef brickBodyDef;
             brickBodyDef.type = b2_staticBody;
-            brickBodyDef.position.Set(BRICK1_POS_X, BRICK1_POS_Y+i*BRICK_POS_X_SPACING);
+            brickBodyDef.position.Set(BRICK1_POS_X+i*BRICK_POS_X_SPACING, BRICK1_POS_Y);
             
             bricks[i] = world->CreateBody(&brickBodyDef);
         }
@@ -291,7 +293,7 @@ public:
                 b2FixtureDef fixtureDef;
                 fixtureDef.shape = &dynamicBox;
                 fixtureDef.density = 1.0f;
-                fixtureDef.friction = 0.3f;
+                fixtureDef.friction = 0.0f;
                 fixtureDef.restitution = 1.0f;
                 bricks[i]->CreateFixture(&fixtureDef);
                 //secondBrick->CreateFixture(&fixtureDef);
@@ -312,7 +314,7 @@ public:
             b2FixtureDef circleFixtureDef;
             circleFixtureDef.shape = &circle;
             circleFixtureDef.density = 1.0f;
-            circleFixtureDef.friction = 0.3f;
+            circleFixtureDef.friction = 0.0f;
             circleFixtureDef.restitution = 1.0f;
             theBall->CreateFixture(&circleFixtureDef);
         }
@@ -464,6 +466,7 @@ public:
         if(bodyA!=nullptr){
             for(int i=0; i<brickArrayLength; i++){
                 if(bodyA==bricks[i]){
+                    gameScore+=10;
                     world->DestroyBody(bodyA);
                     bricks[i]=NULL;
                 }
@@ -472,11 +475,16 @@ public:
         if(bodyB!=nullptr){
             for(int i=0; i<brickArrayLength; i++){
                 if(bodyB==bricks[i]){
+                    gameScore+=10;
                     world->DestroyBody(bodyB);
                     bricks[i]=NULL;
                 }
             }
         }
+        
+        //MyContact myContact = { contact->GetFixtureA(), contact->GetFixtureB() };
+        //std::vector<MyContact>::iterator pos2;
+        contactListener->_contacts.clear();
     }
 
    
@@ -547,7 +555,7 @@ public:
             
             GLuint vertexBuffers[2];
             glGenBuffers(2, vertexBuffers);
-            glBindBuffer(GL_ARRAY_BUFFER, vertexBuffers[i]);
+            glBindBuffer(GL_ARRAY_BUFFER, vertexBuffers[0]);
             GLfloat vertPos[18];
             int k = 0;
             numBrickVerts = 0;
@@ -804,7 +812,7 @@ public:
 -(void)doBounceAngle{
     NSLog(@"bounce angle");
     float xdiff = theBall->GetPosition().x - paddle->GetPosition().x;
-    theBall->ApplyLinearImpulse(b2Vec2(xdiff*10000, 0), theBall->GetPosition(), true);
+    theBall->ApplyLinearImpulse(b2Vec2(xdiff*5000, 0), theBall->GetPosition(), true);
     //theBall->ApplyForceToCenter(b2Vec2(xdiff*1000000000000, 0), true);
 }
 

@@ -6,15 +6,15 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "MyGLGame/CBox2D.mm"
-            timestampString = "513135019.363845"
+            timestampString = "513137419.393213"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "452"
-            endingLineNumber = "452"
+            startingLineNumber = "454"
+            endingLineNumber = "454"
             landmarkName = "-Update:"
             landmarkType = "7">
          </BreakpointContent>
