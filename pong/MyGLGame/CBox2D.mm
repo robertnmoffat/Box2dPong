@@ -80,6 +80,7 @@ public:
     CContactListener *contactListener;
     
     GLKVector2 direction;
+    GLKVector2 hitty;
     // GL-specific variables
     // You will need to set up 2 vertex arrays (for brick and ball)
     GLuint brickVertexArray[5], ballVertexArray;
@@ -90,6 +91,9 @@ public:
     bool ballHitBrick;
     bool ballLaunched;
     bool goDown;
+    bool ballHitSecond;
+    b2Body *rightWall;
+    b2Body *leftWall;
     float totalElapsedTime;
 }
 @end
@@ -112,7 +116,7 @@ public:
         contactListener = new CContactListener();
         world->SetContactListener(contactListener);
         direction = GLKVector2Make(0, -1);
-        
+        hitty = GLKVector2Make(1, 0);
         // Set up the brick and ball objects for Box2D
         b2BodyDef brickBodyDef;
         brickBodyDef.type = b2_staticBody;
@@ -154,11 +158,53 @@ public:
                 circleFixtureDef.restitution = 1.0f;
                 theBall->CreateFixture(&circleFixtureDef);
             }
+            float width = [UIScreen mainScreen].bounds.size.width;
+            float height = [UIScreen mainScreen].bounds.size.height;
+            
+            b2BodyDef rightWallBodyDef;
+            rightWallBodyDef.type = b2_staticBody;
+            rightWallBodyDef.position.Set(width*2, height);
+            
+            rightWall = world->CreateBody(&rightWallBodyDef);
+            if(rightWall){
+                rightWall->SetUserData((__bridge void *)self);
+                //secondBrick->SetUserData((__bridge void *)self);
+                rightWall->SetAwake(true);
+                //secondBrick->SetAwake(false);
+                b2PolygonShape dynamicBox;
+                dynamicBox.SetAsBox(BRICK_HEIGHT/2, height);
+                b2FixtureDef fixtureDef;
+                fixtureDef.shape = &dynamicBox;
+                fixtureDef.density = 1.0f;
+                fixtureDef.friction = 0.3f;
+                fixtureDef.restitution = 1.0f;
+                rightWall->CreateFixture(&fixtureDef);
+            }
+            b2BodyDef leftWallBodyDef;
+            leftWallBodyDef.type = b2_staticBody;
+            leftWallBodyDef.position.Set(0, height);
+            
+            leftWall = world->CreateBody(&leftWallBodyDef);
+            if(leftWall){
+                leftWall->SetUserData((__bridge void *)self);
+                //secondBrick->SetUserData((__bridge void *)self);
+                leftWall->SetAwake(true);
+                //secondBrick->SetAwake(false);
+                b2PolygonShape dynamicBox;
+                dynamicBox.SetAsBox(BRICK_HEIGHT/2, height);
+                b2FixtureDef fixtureDef;
+                fixtureDef.shape = &dynamicBox;
+                fixtureDef.density = 1.0f;
+                fixtureDef.friction = 0.3f;
+                fixtureDef.restitution = 1.0f;
+                leftWall->CreateFixture(&fixtureDef);
+            }
         }
         
         totalElapsedTime = 0;
         ballHitBrick = false;
         ballLaunched = false;
+        //ballHitSecond = false;
     }
     return self;
 }
@@ -178,11 +224,19 @@ public:
     //  and if so, use ApplyLinearImpulse() and SetActive(true)
     if (ballLaunched)
     {
-        if (goDown){
+        theBall->ApplyLinearImpulse(b2Vec2(0,BALL_VELOCITY), theBall->GetPosition(), true);
+        ballLaunched = false;
+      /*  if (goDown){
             theBall->ApplyLinearImpulse(b2Vec2(direction.x * BALL_VELOCITY, direction.y * -BALL_VELOCITY), theBall->GetPosition(), true);
         } else {
-            theBall->ApplyLinearImpulse(b2Vec2(direction.x * BALL_VELOCITY, direction.y * BALL_VELOCITY), theBall->GetPosition(), true);
-        }
+            NSLog(@"bounce angle");
+           
+            float xdiff = theBall->GetPosition().x - secondBrick->GetPosition().x;
+            //theBall->ApplyLinearImpulse(b2Vec2(xdiff*10000, 0), theBall->GetPosition(), true);
+            
+            theBall->ApplyLinearImpulse(b2Vec2(direction.x * BALL_VELOCITY + xdiff*10000, direction.y * BALL_VELOCITY), theBall->GetPosition(), true);
+        }*/
+        
         theBall->SetActive(true);
 #ifdef LOG_TO_CONSOLE
         NSLog(@"Applying impulse %f to ball\n", BALL_VELOCITY);
@@ -195,6 +249,11 @@ public:
         
     }
 
+    if(theBall->GetPosition().y >= 550){
+        
+        theBall->SetTransform(b2Vec2(BALL_POS_X, BALL_POS_Y), 0);
+        
+    }
     
     // Check if it is time yet to drop the brick, and if so
     //  call SetAwake()
@@ -206,10 +265,27 @@ public:
     //  stop the ball and destroy the brick
     if (ballHitBrick)
     {
-        goDown = !goDown;
+        //goDown = !goDown;
+        
+        
+        /*if (ballHitSecond){
+            b2Vec2 balls = theBall->GetPosition() - firstBrick ->GetPosition();
+            direction.x = balls.x;
+            direction.y = balls.y;
+            
+        
+        }else{
+            b2Vec2 balls = theBall->GetPosition() - secondBrick ->GetPosition();
+            direction.x = balls.x;
+            direction.y = balls.y;
+        
+        }*/
+        
+        
+        
        
         //theBall->SetAngularVelocity(2);
-        theBall->SetActive(false);
+        //theBall->SetActive(false);
         //world->DestroyBody(firstBrick);
         //firstBrick = NULL;
         //firstBrick->SetActive(false);
@@ -427,6 +503,8 @@ public:
 
 -(void)RegisterHit
 {
+    if(theBall->GetPosition().y <200)
+        [self doBounceAngle];
     // Set some flag here for processing later...
     ballHitBrick = true;
 }
@@ -467,7 +545,7 @@ public:
     fixtureDef.density = 1.0f;
     
     // Override the default friction.
-    fixtureDef.friction = 0.3f;
+    fixtureDef.friction = 0.0f;
     
     // Add the shape to the body.
     body->CreateFixture(&fixtureDef);
@@ -498,7 +576,7 @@ public:
 
 -(void) movePlayer: (float)move
 {
-    secondBrick->SetTransform(secondBrick->GetPosition() + b2Vec2(move, 0), BRICK2_POS_Y), 0;
+    secondBrick->SetTransform(secondBrick->GetPosition() + b2Vec2(move, 0), secondBrick->GetAngle());
     //Set player boundry
     if(secondBrick->GetPosition().x >= 500){
         
@@ -513,10 +591,23 @@ public:
         theBall->SetTransform(b2Vec2(BALL_POS_X, BALL_POS_Y), 0);
         
     }*/
+    
+    //firstBrick->ApplyLinearImpulse(b2Vec2(theBall.x * BALL_VELOCITY, hitty.y * -BALL_VELOCITY), theBall->GetPosition(), true);
+
 }
 
 -(void) moveAI: (float)ai{
-    firstBrick->SetTransform(b2Vec2((BALL_POS_X, theBall->GetPosition().y), 0),0);
+    //firstBrick->SetTransform(b2Vec2(BALL_POS_X, theBall->GetPosition().y), 0);
+    //theBall->ApplyLinearImpulse(b2Vec2(direction.x * BALL_VELOCITY, direction.y * -BALL_VELOCITY), theBall->GetPosition(), true);
+}
+
+-(void)doBounceAngle{
+    NSLog(@"bounce angle");
+    float ballx =theBall->GetPosition().x;
+    float paddlex =secondBrick->GetPosition().x;
+    float xdiff = theBall->GetPosition().x - secondBrick->GetPosition().x;
+    theBall->ApplyLinearImpulse(b2Vec2(xdiff*10000, 0), theBall->GetPosition(), true);
+    //theBall->ApplyForceToCenter(b2Vec2(xdiff*1000000000000, 0), true);
 }
 
 @end
