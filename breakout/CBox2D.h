@@ -28,6 +28,7 @@ enum
 -(void) Render:(int)mvpMatPtr;
 -(void) RegisterHit;
 -(void) removeBlock:(void*)body;
+-(void) movePlayer: (float)move;
 
 @end
 

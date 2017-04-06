@@ -24,6 +24,7 @@
                         <gestureRecognizers/>
                         <connections>
                             <outletCollection property="gestureRecognizers" destination="uKN-BS-z3p" appends="YES" id="Zkg-wb-Jw3"/>
+                            <outletCollection property="gestureRecognizers" destination="GNA-pU-WQf" appends="YES" id="WDR-fO-P2X"/>
                         </connections>
                     </view>
                 </viewController>
@@ -33,6 +34,11 @@
                         <action selector="singleTap:" destination="BV1-FR-VrT" id="Kx1-zf-H5A"/>
                     </connections>
                 </tapGestureRecognizer>
+                <panGestureRecognizer minimumNumberOfTouches="1" id="GNA-pU-WQf">
+                    <connections>
+                        <action selector="movePaddle:" destination="BV1-FR-VrT" id="WAc-Ph-tbc"/>
+                    </connections>
+                </panGestureRecognizer>
             </objects>
         </scene>
     </scenes>
