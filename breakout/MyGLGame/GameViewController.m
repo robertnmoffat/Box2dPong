@@ -262,6 +262,13 @@
     return YES;
 }
 
+
+
+- (IBAction)movePaddle:(UIPanGestureRecognizer *)sender {
+    CGPoint temp = [sender velocityInView:self.view];
+    [box2d movePlayer:temp.x * 0.01f];
+}
+
 - (IBAction)singleTap:(id)sender
 {
     [box2d LaunchBall];
